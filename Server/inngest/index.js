@@ -9,9 +9,9 @@ const syncUserCreation = inngest.createFunction(
   { id: "sync-user-from-clerk", event: "clerk/user.created" },
   async ({ event }) => {
     const { id, first_name, last_name, email_addresses, image_url } =
-      event.data;
+      event.data; // Clerk's payload wrapper might require event.data.data depending on your Inngest webhook setup, but assuming event.data here as you had it.
 
-    let username = email_addresses[0].email_addresses.split("@")[0];
+    let username = email_addresses[0].email_address.split("@")[0];
 
     // Check Availibility of 'username'
     const user = await User.find({ username });
