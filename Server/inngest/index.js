@@ -8,8 +8,9 @@ export const inngest = new Inngest({ id: "vybe-app" });
 const syncUserCreation = inngest.createFunction(
   { id: "sync-user-from-clerk", event: "clerk/user.created" },
   async ({ event }) => {
+    console.log("Inngest syncUserCreation Triggered!", event);
     const { id, first_name, last_name, email_addresses, image_url } =
-      event.data; // Clerk's payload wrapper might require event.data.data depending on your Inngest webhook setup, but assuming event.data here as you had it.
+      event.data.data || event.data; // Clerk's user object is inside the nested 'data' property
 
     let username = email_addresses[0].email_address.split("@")[0];
 
@@ -37,8 +38,9 @@ const syncUserCreation = inngest.createFunction(
 const syncUserUpdation = inngest.createFunction(
   { id: "update-user-from-clerk", event: "clerk/user.updated" },
   async ({ event }) => {
+    console.log("Inngest syncUserUpdation Triggered!", event);
     const { id, first_name, last_name, email_addresses, image_url } =
-      event.data;
+      event.data.data || event.data;
 
     const updatedUserData = {
       email: email_addresses[0].email_address,
@@ -55,7 +57,8 @@ const syncUserUpdation = inngest.createFunction(
 const syncUserDeletion = inngest.createFunction(
   { id: "delete-user-with-clerk", event: "clerk/user.deleted" },
   async ({ event }) => {
-    const { id } = event.data;
+    console.log("Inngest syncUserDeletion Triggered!", event);
+    const { id } = event.data.data || event.data;
 
     // 'Delete the userData from Mongo DB'
     await User.findByIdAndDelete(id);
