@@ -4,6 +4,7 @@ import "dotenv/config";
 import connectDB from "./configs/db.js";
 
 import {functions, inngest } from "./inngest/index.js"
+import {serve} from "inngest/express"
 
 // {Step-1: Create Server}
 const app = express();
