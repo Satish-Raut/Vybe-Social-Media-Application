@@ -21,7 +21,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
       <div className="w-full px-4 pt-4 pb-3">
         <img
           onClick={() => navigate("/")}
-          src={assets.logo}
+          src={assets.logo2}
           className="w-26 ml-7 my-2 cursor-pointer"
           alt=""
         />
