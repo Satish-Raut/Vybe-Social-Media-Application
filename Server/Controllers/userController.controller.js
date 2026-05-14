@@ -1,6 +1,7 @@
 import User from "../Models/User.js";
-import fs from "fs";
+import fs, { stat } from "fs";
 import imageKit from "../configs/imageKit.js";
+import Connection from "../Models/Connection.js";
 
 // Get Userdata using userid
 export const getUserdata = async (req, res) => {
@@ -65,9 +66,10 @@ export const updateUserdata = async (req, res) => {
 
     // Helper to upload and transform image
     const uploadAndTransform = async (file, width, height) => {
-      const buffer = fs.readFileSync(file.path);
-      const response = await imageKit.upload({
-        file: buffer,
+      // The new ImageKit SDK requires a readable stream instead of a raw Buffer
+      const stream = fs.createReadStream(file.path);
+      const response = await imageKit.files.upload({
+        file: stream,
         fileName: file.originalname,
       });
 
@@ -102,7 +104,7 @@ export const updateUserdata = async (req, res) => {
 
     // { viii. Save updated user data to database }
     const updatedUser = await User.findByIdAndUpdate(userId, updatedData, {
-      new: true,
+      returnDocument: "after",
     });
 
     res.json({
@@ -215,5 +217,159 @@ export const unfollowUsers = async (req, res) => {
   } catch (error) {
     console.log(error);
     res.json({ success: false, message: error.message });
+  }
+};
+
+// Send Connection Request
+export const sendConnectionRequest = async (req, res) => {
+  try {
+    const { userId } = req.auth();
+    const { id } = req.body;
+
+    // { i. Check if user has sent more than 20 connection requests in last 24 hours}
+    const last24Hours = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+    // { ii. Find documents whose created_at is greater than last24Hours}
+    const connectionRequest = await Connection.find({
+      from_user_id: userId,
+      created_at: { $gt: last24Hours },
+    });
+
+    if (connectionRequest.length >= 20) {
+      res.json({
+        success: false,
+        message:
+          "You have sent more than 20 connection requests in the last 24 hours.",
+      });
+    }
+
+    // { iii. If less than 30 connection request done then }
+    // { Check the users are already connected}
+    const connection = await Connection.findOne({
+      $or: [
+        { from_user_id: userId, to_user_id: id },
+        { from_user_id: id, to_user_id: userId },
+      ],
+    });
+
+    if (!connection) {
+      await Connection.create({
+        from_user_id: userId,
+        to_user_id: id,
+      });
+
+      return res.json({ sucess: true, message: "Request sent successfully." });
+    } else if (connection && connection.status === "accepted") {
+      return res.json({
+        success: false,
+        message: "You are already connected with this user.",
+      });
+    }
+
+    res.json({
+      success: false,
+      message: "Connection request is pending.",
+    });
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: error.message });
+  }
+};
+
+// Get all connection-related data of the current logged-in user
+export const getuserConnections = async (req, res) => {
+  try {
+    // { i. Get the current authenticated user's ID from Clerk auth}
+    const { userId } = req.auth();
+
+    // { ii. Find the current user from database}
+    // populate() replaces ObjectIds with complete user documents
+    const user = await User.findById(userId).populate(
+      "connections followers following",
+    );
+
+    // {Extract user's accepted connections}
+    const connections = user.connections;
+
+    // {Extract users who follow the current user}
+    const followers = user.followers;
+
+    // {Extract users whom the current user is following}
+    const following = user.following;
+
+    // { iii. Find all pending connection requests sent TO the current user}
+    const pendingConnections = (
+      await Connection.find({
+        to_user_id: userId, // Current user is the receiver
+        status: "pending", // Only pending requests
+      }).populate("from_user_id")
+    ) // Populate sender user details
+      // Extract only sender user data from each connection request
+      .map((connection) => connection.from_user_id);
+
+    // Send all connection-related data to frontend
+    res.json({
+      success: true,
+      connections,
+      followers,
+      following,
+      pendingConnections,
+    });
+  } catch (error) {
+    // Print error in server console
+    console.log(error);
+
+    // Send error response
+    res.json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// Accept Connection Request
+export const acceptConnectionRequest = async (req, res) => {
+  try {
+    // { i. Get the current authenticated user's ID from Clerk auth}
+    const { userId } = req.auth();
+    const { id } = req.body;
+
+    // { ii. Find is there any connection request sent by other users}
+    const connection = await Connection.findOne({
+      from_user_id: id,
+      to_user_id: userId,
+      status: "pending"
+    });
+
+    // { iii. If there is no connection request found}
+    if (!connection) {
+      return res.json({ success: false, message: "Connection not found." });
+    }
+
+    // { iv. If connection request is availabel then proceed for acceot it}
+    // *-> Save the other users id in the connections array*
+    const user = await User.findById(userId);
+    user.connections.push(id);
+    await user.save();
+
+    // *-> Save the other users id in the connections array*
+    const toUser = await User.findById(id);
+    toUser.connections.push(userId);
+    await toUser.save();
+
+    // {v. Update the connection status}
+    connection.status = "accepted";
+    await connection.save();
+
+    res.json({ success: true, message: "Connection accepted successfully." });
+  } catch (error) {
+    // Print error in server console
+    console.log(error);
+
+    // Send error response
+    res.json({
+      success: false,
+      message: error.message,
+    });
   }
 };

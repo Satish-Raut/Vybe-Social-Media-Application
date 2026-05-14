@@ -7,24 +7,32 @@ import Connections from './Pages/Connections'
 import Discover from './Pages/Discover'
 import Profile from './Pages/Profile'
 import CreatePost from './Pages/CreatePost'
-import { useUser } from '@clerk/react' 
+import { useUser, useAuth } from '@clerk/react'
 import Layout from './Pages/Layout'
+import { useEffect } from 'react'
 
 const App = () => {
-  const {user} = useUser();
+  const { user } = useUser();
+  const { getToken } = useAuth();
+
+  useEffect(() => {
+    if (user) {
+      console.log(getToken().then((token) => console.log(token))) 
+    }
+  }, [user]);
 
   return (
     <>
       <Routes>
-        <Route path='/' element={!user ? <Login/> : <Layout/>}>
-          <Route index element={<Feed/>}/>
-          <Route path='messages' element={<Messages/>}/>
-          <Route path='messages/:userId' element={<ChatBox/>}/>
-          <Route path='connections' element={<Connections/>}/>
-          <Route path='discover' element={<Discover/>}/>
-          <Route path='profile' element={<Profile/>}/>
-          <Route path='profile/:profileId' element={<Profile/>}/>
-          <Route path='create-post' element={<CreatePost/>}/>
+        <Route path='/' element={!user ? <Login /> : <Layout />}>
+          <Route index element={<Feed />} />
+          <Route path='messages' element={<Messages />} />
+          <Route path='messages/:userId' element={<ChatBox />} />
+          <Route path='connections' element={<Connections />} />
+          <Route path='discover' element={<Discover />} />
+          <Route path='profile' element={<Profile />} />
+          <Route path='profile/:profileId' element={<Profile />} />
+          <Route path='create-post' element={<CreatePost />} />
         </Route>
       </Routes>
     </>
