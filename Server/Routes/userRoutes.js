@@ -1,8 +1,11 @@
 import express from "express";
 import {
+  acceptConnectionRequest,
   discoverUsers,
   followUsers,
+  getuserConnections,
   getUserdata,
+  sendConnectionRequest,
   unfollowUsers,
   updateUserdata,
 } from "../Controllers/userController.controller.js";
@@ -34,4 +37,12 @@ userRouter.post("/follow", protect, followUsers);
 // unfollow user data sored in database
 userRouter.post("/unfollow", protect, unfollowUsers);
 
+// Connection request
+userRouter.post("/connect", protect, sendConnectionRequest);
+
+// Accept Connection request
+userRouter.post("/accept", protect, acceptConnectionRequest);
+
+// Get all Connection details
+userRouter.get("/connections", protect, getuserConnections);
 export default userRouter;

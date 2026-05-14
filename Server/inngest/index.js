@@ -1,12 +1,14 @@
 import { Inngest } from "inngest";
 import User from "../Models/User.js";
+import sendEmail from "../configs/nodeMailer.js";
+import { connectionRequestTemplate } from "../configs/emailTemplates.js";
+import Connection from "../Models/Connection.js";
 
 // Create a client to send and receive events
 export const inngest = new Inngest({ id: "vybe-app" });
 
 // 'Inngest functions to save the user data to the database'
 const syncUserCreation = inngest.createFunction(
-
   { id: "sync-user-from-clerk", triggers: [{ event: "clerk/user.created" }] },
 
   async ({ event }) => {
@@ -15,7 +17,7 @@ const syncUserCreation = inngest.createFunction(
       event.data.data || event.data; // Clerk's user object is inside the nested 'data' property
 
     let username = email_addresses[0].email_address.split("@")[0];
-    console.log(username)
+    console.log(username);
 
     // Check Availibility of 'username'
     const user = await User.find({ username });
@@ -39,9 +41,8 @@ const syncUserCreation = inngest.createFunction(
 
 // 'Inngest functions to update the user data to the database'
 const syncUserUpdation = inngest.createFunction(
-
   { id: "update-user-from-clerk", triggers: [{ event: "clerk/user.updated" }] },
-  
+
   async ({ event }) => {
     console.log("Inngest syncUserUpdation Triggered!", event);
     const { id, first_name, last_name, email_addresses, image_url } =
@@ -70,5 +71,63 @@ const syncUserDeletion = inngest.createFunction(
   },
 );
 
+// Inngest Function to send reminder through email when a new connection request is added
+const sendNewConnectionRequestReminder = inngest.createFunction(
+  {
+    id: "send-new-connection-request-reminder",
+    triggers: [{ event: "app/connection-request" }],
+  },
+
+  async ({ event, step }) => {
+    const { connectionId } = event.data;
+
+    await step.run("send-connection-request-email", async () => {
+      const connection = await Connection.findById(connectionId).populate(
+        "from_user_id to_user_id",
+      );
+
+      const sender = connection.from_user_id;
+      const receiver = connection.to_user_id;
+
+      const { subject, body } = connectionRequestTemplate(sender, receiver);
+
+      await sendEmail({ to: receiver.email, subject, body });
+    });
+
+    // Check if with in 24 hours the request is not accepted
+    const in24Hours = new Date(Date.now() * 24 * 60 * 60 * 1000);
+    await step.sleepUntill("wait-for-24-hours", in24Hours);
+
+    await step.run("send-connection-request-reminder-email", async () => {
+      const connection = await Connection.findById(connectionId).populate(
+        "from_user_id to_user_id",
+      );
+
+      // If already accepted, skip sending the reminder
+      if (connection.status === "accepted") {
+        return { message: "Already Accepted." };
+      }
+
+      const sender = connection.from_user_id;
+      const receiver = connection.to_user_id;
+
+      const { subject, body } = connectionRequestTemplate(
+        sender,
+        receiver,
+        true,
+      );
+
+      await sendEmail({ to: receiver.email, subject, body });
+
+      return { message: "Reminder sent." };
+    });
+  },
+);
+
 // Create an empty array where we'll export future Inngest functions
-export const functions = [syncUserCreation, syncUserUpdation, syncUserDeletion];
+export const functions = [
+  syncUserCreation,
+  syncUserUpdation,
+  syncUserDeletion,
+  sendNewConnectionRequestReminder,
+];
