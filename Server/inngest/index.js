@@ -6,13 +6,16 @@ export const inngest = new Inngest({ id: "vybe-app" });
 
 // 'Inngest functions to save the user data to the database'
 const syncUserCreation = inngest.createFunction(
+
   { id: "sync-user-from-clerk", triggers: [{ event: "clerk/user.created" }] },
+
   async ({ event }) => {
     console.log("Inngest syncUserCreation Triggered!", event);
     const { id, first_name, last_name, email_addresses, image_url } =
       event.data.data || event.data; // Clerk's user object is inside the nested 'data' property
 
     let username = email_addresses[0].email_address.split("@")[0];
+    console.log(username)
 
     // Check Availibility of 'username'
     const user = await User.find({ username });
@@ -36,7 +39,9 @@ const syncUserCreation = inngest.createFunction(
 
 // 'Inngest functions to update the user data to the database'
 const syncUserUpdation = inngest.createFunction(
+
   { id: "update-user-from-clerk", triggers: [{ event: "clerk/user.updated" }] },
+  
   async ({ event }) => {
     console.log("Inngest syncUserUpdation Triggered!", event);
     const { id, first_name, last_name, email_addresses, image_url } =

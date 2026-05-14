@@ -3,8 +3,9 @@ import cors from "cors";
 import "dotenv/config";
 import connectDB from "./configs/db.js";
 
-import {functions, inngest } from "./inngest/index.js"
-import {serve} from "inngest/express"
+import { functions, inngest } from "./inngest/index.js";
+import { serve } from "inngest/express";
+import { clerkMiddleware } from "@clerk/express";
 
 // {Step-1: Create Server}
 const app = express();
@@ -15,12 +16,13 @@ await connectDB();
 // {Step-2: Define Middlewares}
 app.use(express.json());
 app.use(cors());
+app.use(clerkMiddleware());
 
 // {Step-3: Define API Methods}
 app.get("/", (req, res) => {
   res.send("Server is Running");
 });
-app.use("/api/inngest", serve({client: inngest, functions}));
+app.use("/api/inngest", serve({ client: inngest, functions }));
 
 // {Listen on a Port number}
 const PORT = process.env.PORT || 4000;
