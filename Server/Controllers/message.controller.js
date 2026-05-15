@@ -1,6 +1,6 @@
 import fs from "fs";
 import imageKit from "../configs/imageKit.js";
-import Message from "../Models/Message";
+import Message from "../Models/Message.js";
 
 // {Server side events for real time messaging}
 
