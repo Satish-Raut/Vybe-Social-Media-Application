@@ -8,9 +8,11 @@ import {
   sendConnectionRequest,
   unfollowUsers,
   updateUserdata,
+  getUserProfile,
 } from "../Controllers/userController.controller.js";
 import { protect } from "../Middlewares/auth.js";
 import { upload } from "../configs/multer.js";
+import { getUserRecentMessages } from "../Controllers/message.controller.js";
 
 const userRouter = express.Router();
 
@@ -45,4 +47,11 @@ userRouter.post("/accept", protect, acceptConnectionRequest);
 
 // Get all Connection details
 userRouter.get("/connections", protect, getuserConnections);
+
+// Get User Profile details by id
+userRouter.get("/profile/", protect, getUserProfile);
+
+// Recent messages data for feed page
+userRouter.get("/recent-messages", protect, getUserRecentMessages);
+
 export default userRouter;

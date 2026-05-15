@@ -3,11 +3,12 @@ import User from "../Models/User.js";
 import sendEmail from "../configs/nodeMailer.js";
 import { connectionRequestTemplate } from "../configs/emailTemplates.js";
 import Connection from "../Models/Connection.js";
+import Story from "../Models/Story.js";
 
 // Create a client to send and receive events
 export const inngest = new Inngest({ id: "vybe-app" });
 
-// 'Inngest functions to save the user data to the database'
+// {'Inngest functions to save the user data to the database'}
 const syncUserCreation = inngest.createFunction(
   { id: "sync-user-from-clerk", triggers: [{ event: "clerk/user.created" }] },
 
@@ -39,7 +40,7 @@ const syncUserCreation = inngest.createFunction(
   },
 );
 
-// 'Inngest functions to update the user data to the database'
+// {'Inngest functions to update the user data to the database'}
 const syncUserUpdation = inngest.createFunction(
   { id: "update-user-from-clerk", triggers: [{ event: "clerk/user.updated" }] },
 
@@ -59,7 +60,7 @@ const syncUserUpdation = inngest.createFunction(
   },
 );
 
-// 'Inngest functions to Delete the user data from the database'
+// {'Inngest functions to Delete the user data from the database'}
 const syncUserDeletion = inngest.createFunction(
   { id: "delete-user-with-clerk", triggers: [{ event: "clerk/user.deleted" }] },
   async ({ event }) => {
@@ -71,7 +72,7 @@ const syncUserDeletion = inngest.createFunction(
   },
 );
 
-// Inngest Function to send reminder through email when a new connection request is added
+// {Inngest Function to send reminder through email when a new connection request is added}
 const sendNewConnectionRequestReminder = inngest.createFunction(
   {
     id: "send-new-connection-request-reminder",
@@ -120,6 +121,22 @@ const sendNewConnectionRequestReminder = inngest.createFunction(
       await sendEmail({ to: receiver.email, subject, body });
 
       return { message: "Reminder sent." };
+    });
+  },
+);
+
+// {Inngest function to delete the story after 24 hour}
+const deleteStory = inngest.createFunction(
+  { id: "story-delete", triggers: [{ event: "app/story.delete" }] },
+
+  async ({ event, step }) => {
+    const { storyId } = event.data;
+    const in24Hours = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    await step.sleepUntil("wait-for-24-hours", in24Hours);
+    await step.run("delete-story", async () => {
+      await Story.findByIdAndDelete(storyId);
+      return { message: "Story Deleted." };
     });
   },
 );

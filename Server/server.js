@@ -7,6 +7,9 @@ import { functions, inngest } from "./inngest/index.js";
 import { serve } from "inngest/express";
 import { clerkMiddleware } from "@clerk/express";
 import userRouter from "./Routes/userRoutes.js";
+import postRouter from "./Routes/post.routes.js";
+import storyRouter from "./Routes/story.routes.js";
+import messageRouter from "./Routes/message.routes.js";
 
 // {Step-1: Create Server}
 const app = express();
@@ -25,6 +28,9 @@ app.get("/", (req, res) => {
 });
 app.use("/api/inngest", serve({ client: inngest, functions }));
 app.use("/api/user", userRouter);
+app.use("/api/post", postRouter);
+app.use("/api/story", storyRouter);
+app.use("/api/message", messageRouter);
 
 // {Listen on a Port number}
 const PORT = process.env.PORT || 4000;

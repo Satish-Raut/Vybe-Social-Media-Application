@@ -2,6 +2,8 @@ import User from "../Models/User.js";
 import fs, { stat } from "fs";
 import imageKit from "../configs/imageKit.js";
 import Connection from "../Models/Connection.js";
+import Post from "../Models/Post.js";
+import { inngest } from "../inngest/index.js";
 
 // Get Userdata using userid
 export const getUserdata = async (req, res) => {
@@ -60,7 +62,7 @@ export const updateUserdata = async (req, res) => {
       full_name,
     };
 
-    // {Fetch the profile image and cover image from the users request}
+    // { viii. Fetch the profile image and cover image from the users request}
     const profile = req.files?.profile && req.files.profile[0];
     const cover = req.files?.cover && req.files.cover[0];
 
@@ -253,12 +255,20 @@ export const sendConnectionRequest = async (req, res) => {
     });
 
     if (!connection) {
-      await Connection.create({
+      const newConnection = await Connection.create({
         from_user_id: userId,
         to_user_id: id,
       });
 
-      return res.json({ sucess: true, message: "Request sent successfully." });
+      await inngest.send({
+        name: "app/connection-request",
+        data: { connectionId: newConnection._id },
+      });
+
+      return res.json({
+        sucess: true,
+        message: "Connection Request sent successfully.",
+      });
     } else if (connection && connection.status === "accepted") {
       return res.json({
         success: false,
@@ -338,7 +348,7 @@ export const acceptConnectionRequest = async (req, res) => {
     const connection = await Connection.findOne({
       from_user_id: id,
       to_user_id: userId,
-      status: "pending"
+      status: "pending",
     });
 
     // { iii. If there is no connection request found}
@@ -347,15 +357,9 @@ export const acceptConnectionRequest = async (req, res) => {
     }
 
     // { iv. If connection request is availabel then proceed for acceot it}
-    // *-> Save the other users id in the connections array*
-    const user = await User.findById(userId);
-    user.connections.push(id);
-    await user.save();
-
-    // *-> Save the other users id in the connections array*
-    const toUser = await User.findById(id);
-    toUser.connections.push(userId);
-    await toUser.save();
+    // *-> Safely add both users to each other's connections array using $addToSet*
+    await User.findByIdAndUpdate(userId, { $addToSet: { connections: id } });
+    await User.findByIdAndUpdate(id, { $addToSet: { connections: userId } });
 
     // {v. Update the connection status}
     connection.status = "accepted";
@@ -371,5 +375,27 @@ export const acceptConnectionRequest = async (req, res) => {
       success: false,
       message: error.message,
     });
+  }
+};
+
+// Get User Profile
+export const getUserProfile = async (req, res) => {
+  try {
+    // Get the profile id from the user click
+    const { profileId } = req.body;
+
+    // Find the user and exclude sensitive information if needed
+    const profile = await User.findById(profileId);
+
+    if (!profile) {
+      return res.json({ success: false, message: "User not found." });
+    }
+
+    const posts = await Post.find({ user: profileId }).populate("user");
+
+    res.json({ success: true, profile, posts });
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, message: error.message });
   }
 };
