@@ -78,11 +78,14 @@ export const sendMessage = async (req, res) => {
 
     res.json({ success: true, message });
 
-    // {Send the message to the to_user_id using SSE}
+    // Enrich the saved message with the sender's full profile (name, picture, etc.)
+    // so the receiver's Notification UI has all the data it needs to render
     const messageWithUserData = await Message.findById(message._id).populate(
       "from_user_id",
     );
 
+    // connections[to_user_id] exists ONLY if the receiver currently has the app open.
+    // This is the actual "online" check — if the key is missing, the receiver is offline.
     if (connections[to_user_id]) {
       connections[to_user_id].write(
         `data: ${JSON.stringify(messageWithUserData)}\n\n`,
