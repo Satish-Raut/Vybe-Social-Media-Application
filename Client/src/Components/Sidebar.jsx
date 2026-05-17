@@ -5,11 +5,12 @@ import MenuItems from "./MenuItems";
 import { CirclePlus, LogOut } from "lucide-react";
 import { UserButton, useClerk } from "@clerk/react";
 import '../index.css';
+import { useSelector } from "react-redux";
 
 const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
 
   const navigate = useNavigate();
-  const user = dummyUserData
+  const user = useSelector((state) => state.user.value)
   const { signOut } = useClerk();
 
   return (
@@ -34,20 +35,22 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
       <div className="w-full flex-1 pt-6 px-4">
         <MenuItems setSidebarOpen={setSidebarOpen} />
 
-        <Link to="/create-post" className="flex items-center justify-center gap-2 py-2.5 mt-6 mx-2 rounded-lg bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-700 hover:to-purple-800 active:scale-95 transition text-white cursor-pointer">
+        <Link to="/create-post" className="flex items-center justify-center gap-2 py-3 mt-6 mx-2 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 shadow-md shadow-indigo-500/20 hover:shadow-lg hover:shadow-indigo-500/30 active:scale-95 transition-all text-white font-medium cursor-pointer">
           <CirclePlus className="w-5 h-5" />
           Create Post
         </Link>
       </div>
-      <div className="w-full border-t border-gray-200 p-4 px-7 flex items-center justify-between">
-        <div className="flex gap-2 items-center cursor-pointer">
-          <UserButton />
+      <div className="w-full border-t border-slate-100 bg-slate-50/50 p-4 px-7 flex items-center justify-between hover:bg-slate-50 transition-colors">
+        <div className="flex gap-3 items-center cursor-pointer">
+          <div className="ring-2 ring-indigo-100 rounded-full">
+            <UserButton />
+          </div>
           <div>
-            <h1 className="text-sm font-medium">{user.full_name}</h1>
-            <p className="text-xs text-gray-500">@{user.username}</p>
+            <h1 className="text-sm font-semibold text-slate-800">{user.full_name}</h1>
+            <p className="text-xs font-medium text-slate-500">@{user.username}</p>
           </div>
         </div>
-        <LogOut onClick={signOut} className="w-4 text-gray-400 hover:text-gray-700 transition cursor-pointer" />
+        <LogOut onClick={signOut} className="w-5 h-5 text-slate-400 hover:text-red-500 transition cursor-pointer" />
       </div>
     </div>
   );

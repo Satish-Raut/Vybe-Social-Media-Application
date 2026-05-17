@@ -5,14 +5,14 @@ import User from "../Models/User.js";
 import { inngest } from "../inngest/index.js";
 
 // Add user story
-export const addUserStory = async () => {
+export const addUserStory = async (req, res) => {
   try {
     // { i. Get the all data about the story uploaded by the user}
     const { userId } = req.auth();
     const { content, media_type, background_color } = req.body;
 
     const media = req.file;
-    let media_url = [];
+    let media_url = "";
 
     // { ii. Upload the medias to imagekit}
     if (media_type == "image" || media_type == "video") {
@@ -24,6 +24,9 @@ export const addUserStory = async () => {
       });
 
       media_url = response.url;
+      
+      // Cleanup the temporary file from the server
+      fs.unlinkSync(media.path);
     }
 
     // { iii. Now create a story and store in database}
@@ -49,7 +52,7 @@ export const addUserStory = async () => {
 };
 
 // Get the user story
-export const getUserStory = async () => {
+export const getUserStory = async (req, res) => {
   try {
     // { i. Get the all data about the story uploaded by the user}
     const { userId } = req.auth();
@@ -58,7 +61,7 @@ export const getUserStory = async () => {
     const user = await User.findById(userId);
 
     // { iii. get all the user connections and following's ids}
-    const userIds = [userId, ...user.followings, user.connections];
+    const userIds = [userId, ...user.following, ...user.connections];
 
     // { iv. now user the all userIds and get the stories posted by them}
     // '$in operator to fetch only those stories whose user field matches any ID present in the userIds array.'

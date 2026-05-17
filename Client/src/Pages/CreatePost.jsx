@@ -2,16 +2,61 @@ import React, { useState } from "react";
 import { dummyUserData } from "../assets/assets";
 import { X, Image } from "lucide-react";
 import toast from 'react-hot-toast'
+import { useSelector } from "react-redux";
+import { useAuth } from "@clerk/react";
+import api from "../api/axios";
+import { useNavigate } from "react-router-dom";
 
 const CreatePost = () => {
+
+  const navigate = useNavigate()
   const [content, setContent] = useState("");
   const [images, setImages] = useState([]);
-  const loading = false;
+  const [loading, setLoading] = useState(false);
 
-  const user = dummyUserData;
+  const user = useSelector((state) => state.user.value);
+  const { getToken } = useAuth();
 
   const handleSubmit = async () => {
+    if (!images.length && !content) {
+      return toast.error("Please add atleast one image or text.")
+    }
 
+    setLoading(true)
+    const postType = images.length && content ? 'text_with_image' : images.length ? 'image' : 'text';
+
+    try {
+      const formData = new FormData();
+      formData.append('content', content);
+      formData.append('post_type', postType);
+      images.map((image) => {
+        formData.append('images', image);
+      });
+
+      const token = await getToken();
+
+      const { data } = await api.post('/api/post/add', formData,
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      )
+
+      console.log(data);
+
+      if (data.success) {
+        navigate('/');
+      }
+      else {
+        console.log(data.message)
+        throw new Error(data.message)
+      }
+
+    } catch (error) {
+      console.log(error.message)
+      throw new Error(error.message)
+    }
+
+    setLoading(false)
   }
 
   return (
@@ -82,7 +127,7 @@ const CreatePost = () => {
             multiple
             onChange={(e) => setImages([...images, ...e.target.files])}
           />
-          <button disabled={loading} onClick={()=>toast.promise(
+          <button disabled={loading} onClick={() => toast.promise(
             handleSubmit(),
             {
               loading: 'uploading ...',

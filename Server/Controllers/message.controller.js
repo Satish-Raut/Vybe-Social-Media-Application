@@ -13,10 +13,10 @@ export const sseController = (req, res) => {
   console.log(`New Client Connected ${userId}`);
 
   //Set SSE Headers
-  res.serHeader("content-type", "text/event-stream");
-  res.serHeader("Cache-Control", "no-cache");
-  res.serHeader("Connection", "keep-alive");
-  res.serHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("content-type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("Access-Control-Allow-Origin", "*");
 
   // Add the clients response object to the connections object
   connections[userId] = res;
@@ -53,7 +53,7 @@ export const sendMessage = async (req, res) => {
 
       media_url = imageKit.helper.buildSrc({
         urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT,
-        src: response.filePath,
+        src: response.url,
         transformation: [
           {
             width: "1280",
@@ -63,6 +63,9 @@ export const sendMessage = async (req, res) => {
           },
         ],
       });
+      
+      // Cleanup the temporary file from the server
+      fs.unlinkSync(image.path);
     }
 
     const message = await Message.create({
@@ -124,7 +127,7 @@ export const getUserRecentMessages = async (req, res) => {
 
     const messages = await Message.find({ to_user_id: userId })
       .populate("from_user_id to_user_id")
-      .sort({ created_at: -1 });
+      .sort({ createdAt: -1 });
 
     res.json({ success: true, messages });
   } catch (error) {

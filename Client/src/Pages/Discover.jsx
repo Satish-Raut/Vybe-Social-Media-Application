@@ -1,25 +1,51 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { dummyConnectionsData } from '../assets/assets'
 import { Search } from 'lucide-react'
 import UserCard from '../Components/UserCard'
 import Loading from '../Components/Loading'
+import api from '../api/axios'
+import { getToken, useAuth } from '@clerk/react'
+import toast from 'react-hot-toast'
+import { fetchUser } from '../features/User/userSlice.jsx'
+import { useDispatch } from 'react-redux'
 
 const Discover = () => {
 
   const [input, setInput] = useState('')
-  const [users, setUsers] = useState(dummyConnectionsData)
+  const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(false)
+  const { getToken } = useAuth();
+  const dispatch = useDispatch();
 
   const handleSearch = async (e) => {
     if (e.key === 'Enter') {
-      setUsers([])
-      setLoading(true)
-      setTimeout(() => {
-        setUsers(dummyConnectionsData)
-        setLoading(false)
-      }, 1000)
+
+      try {
+        setUsers([])
+        setLoading(true)
+
+        const { data } = await api.post('/api/user/discover', { input }, {
+          headers: { Authorization: `Bearer ${await getToken()}` }
+        })
+
+        data.success ? setUsers(data.users) : toast.error(data.message)
+        setLoading(false);
+        setInput('');
+
+      } catch (error) {
+        toast.error(error.message)
+      }
+      setLoading(false)
     }
   }
+
+  useEffect(() => {
+    const loadUser = async () => {
+      const token = await getToken();
+      dispatch(fetchUser(token));
+    };
+    loadUser();
+  }, []);
 
   return (
     <div className='min-h-screen bg-gradient-to-b from-slate-50 to-white'>
@@ -31,11 +57,18 @@ const Discover = () => {
           <p className='text-slate-600'>Connect with amazing people and grow your network</p>
         </div>
         {/* Search */}
-        <div className='mb-8 shadow-md rounded-md border border-slate-200/60 bg-white/80'>
-          <div className='relative p-4'>
-              <Search className='absolute left-7 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5' />
-              <input type='text' placeholder='Search people by name, username, bio, or location...' className='pl-10 sm:pl-12 py-2 w-full border border-gray-300 rounded-md max-sm:text-sm' onChange={(e) => setInput(e.target.value)} value={input} onKeyUp={handleSearch} />
+        <div className='mb-8 relative max-w-3xl'>
+          <div className='absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none'>
+            <Search className='h-5 w-5 text-slate-400' />
           </div>
+          <input 
+            type='text' 
+            placeholder='Search people by name, username, bio, or location...' 
+            className='w-full pl-11 pr-4 py-3.5 bg-white border border-slate-200 rounded-2xl shadow-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all' 
+            onChange={(e) => setInput(e.target.value)} 
+            value={input} 
+            onKeyUp={handleSearch} 
+          />
         </div>
         <div className='flex flex-wrap gap-6'>
           {users.map((user) => (

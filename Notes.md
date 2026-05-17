@@ -33,3 +33,12 @@
 ## 4. General Debugging
 - Always ensure `const` isn't used for variables you intend to reassign later (use `let`).
 - When encountering two errors at once (e.g., Clerk crashing + Multer crashing), look for the root cause. If the authentication middleware (Clerk) crashes, it cuts off the connection, which naturally causes the file parser (Multer) to crash because it didn't finish reading the file.
+
+## 5. Frontend & FormData
+- **`console.log(FormData)`**: When you log a `FormData` object in the browser console, it appears empty (`FormData {}`). This is because `FormData` hides its internal data. To actually view the contents for debugging, you must loop through it:
+  ```javascript
+  for (let [key, value] of userData.entries()) {
+      console.log(key, value);
+  }
+  ```
+- **Backend Parsing**: The frontend sends `FormData` as a `multipart/form-data` binary stream. Express/Node.js cannot read this natively. You must use a middleware like `multer` (e.g., `upload.fields(...)`) on your backend route. Multer intercepts the stream, extracts the text fields into `req.body`, and extracts the files into `req.files`.

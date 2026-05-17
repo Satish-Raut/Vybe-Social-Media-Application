@@ -9,6 +9,6 @@ postRouter.post("/add", upload.array("images", 4), protect, addPost);
 
 postRouter.get("/feed", protect, getFeedPost);
 
-postRouter.get("/like", protect, likePost);
+postRouter.post("/like", protect, likePost);
 
 export default postRouter;

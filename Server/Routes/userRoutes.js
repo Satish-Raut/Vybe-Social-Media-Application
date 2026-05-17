@@ -49,7 +49,7 @@ userRouter.post("/accept", protect, acceptConnectionRequest);
 userRouter.get("/connections", protect, getuserConnections);
 
 // Get User Profile details by id
-userRouter.get("/profile/", protect, getUserProfile);
+userRouter.post("/profile", protect, getUserProfile);
 
 // Recent messages data for feed page
 userRouter.get("/recent-messages", protect, getUserRecentMessages);

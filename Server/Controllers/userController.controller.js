@@ -14,7 +14,7 @@ export const getUserdata = async (req, res) => {
 
     // { ii. Find the user from the database using the 'userId'}
     const user = await User.findById(userId);
-    console.log("Fetched User data: ", user);
+    // console.log("Fetched User data: ", user);
 
     // { iii. If the user is not exist then send the message Not Found}
     if (!user) {
@@ -266,7 +266,7 @@ export const sendConnectionRequest = async (req, res) => {
       });
 
       return res.json({
-        sucess: true,
+        success: true,
         message: "Connection Request sent successfully.",
       });
     } else if (connection && connection.status === "accepted") {
@@ -392,8 +392,9 @@ export const getUserProfile = async (req, res) => {
     }
 
     const posts = await Post.find({ user: profileId }).populate("user");
+    const likedPosts = await Post.find({ likes_count: profileId }).populate("user");
 
-    res.json({ success: true, profile, posts });
+    res.json({ success: true, profile, posts, likedPosts });
   } catch (error) {
     console.log(error);
     res.json({ success: false, message: error.message });

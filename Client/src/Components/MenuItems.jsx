@@ -12,7 +12,7 @@ const MenuItems = ({ setSidebarOpen }) => {
                     end={item.to === "/"}
                     onClick={() => setSidebarOpen(false)}
                     className={({ isActive }) =>
-                        `px-3.5 py-2 flex items-center gap-3 rounded-xl ${isActive ? "bg-indigo-50 text-indigo-700" : "text-gray-600 hover:bg-gray-50"
+                        `px-3.5 py-2.5 flex items-center gap-3 rounded-xl transition-all ${isActive ? "bg-gradient-to-r from-indigo-50 to-indigo-100/50 text-indigo-700 font-semibold shadow-sm ring-1 ring-indigo-500/10" : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                         }`
                     }
                 ><item.Icon className="w-5 h-5" />

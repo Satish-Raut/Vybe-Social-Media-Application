@@ -39,7 +39,7 @@ export const addPost = async (req, res) => {
           });
 
           // Cleanup the temporary file from the server
-          fs.unlinkSync(file.path);
+          fs.unlinkSync(image.path);
 
           return transformedUrl;
         }),
@@ -88,23 +88,22 @@ export const likePost = async (req, res) => {
     const { postId } = req.body;
 
     const post = await Post.findById(postId);
+    if (!post) {
+      return res.json({ success: false, message: "Post not found." });
+    }
 
     // {If the post has a like from the current user then the click is considered as Unlike}
     if (post.likes_count.includes(userId)) {
       // {Remove the current userId}
-      post.likes_count = post.likes_count.filter((user) => user !== userId);
-      await post.save();
+      await Post.findByIdAndUpdate(postId, { $pull: { likes_count: userId } });
 
-      res.json({ success: true, message: "👎Post Unliked" });
+      return res.json({ success: true, message: " Post Unliked" });
     } else {
       // { Add the like by current user}
-      post.likes_count.push(userId);
-      await post.save();
+      await Post.findByIdAndUpdate(postId, { $addToSet: { likes_count: userId } });
 
-      res.json({ success: true, message: "👍Post Liked" });
+      return res.json({ success: true, message: " Post Liked" });
     }
-
-    res.json({ success: true, posts });
   } catch (error) {
     console.log(error);
     res.json({ success: false, message: error.message });
