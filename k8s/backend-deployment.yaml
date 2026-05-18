@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: vybe-backend
 spec:
-  replicas: 2 # Running 2 copies for high availability
+  replicas: 1 # Running 1 copy to maintain single-state SSE memory
   selector:
     matchLabels:
       app: vybe-backend
