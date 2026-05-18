@@ -24,8 +24,14 @@ export const sseController = (req, res) => {
   // send an initial event to the client
   res.write("log: Connected to SSE stream\n\n");
 
+  // Set up a keep-alive heartbeat interval every 20 seconds to prevent proxy timeouts
+  const keepAliveInterval = setInterval(() => {
+    res.write(":\n\n"); // Standard SSE comment keep-alive ping
+  }, 20000);
+
   // Handle Client disconnection
   req.on("close", () => {
+    clearInterval(keepAliveInterval);
     //  Removes the clients response object to the connections array object
     delete connections[userId];
     console.log("Client Disconnected!");
