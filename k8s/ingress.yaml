@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: vybe-ingress
+spec:
+  rules:
+  - http:
+      paths:
+      # All traffic going to /api goes to the backend Node.js service
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: vybe-backend-service
+            port:
+              number: 4000
+      # All other traffic goes to the frontend React/Nginx service
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: vybe-frontend-service
+            port:
+              number: 80

@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vybe-frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: vybe-frontend
+  template:
+    metadata:
+      labels:
+        app: vybe-frontend
+    spec:
+      containers:
+      - name: frontend
+        image: socialmediaplatformvybe-frontend:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 80

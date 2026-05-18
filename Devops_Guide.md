@@ -160,4 +160,190 @@ That is exactly why finishing the application first makes the DevOps learning 10
 
 ---
 
+---
+
+## 🌐 Phase 7 — Custom Domain + DNS Setup (GitHub Developer Pack)
+
+**Goal:** Point your free developer domain to your live Vybe application running on AWS EKS, so users can access it at `vybe.live` (or similar) instead of a raw AWS IP address.
+
+### Step 1: Claim Your Free Domain
+
+You have two options from your **GitHub Developer Pack**:
+
+| Provider | Offer | Best For |
+|---|---|---|
+| **Name.com** | Free domain with `.live`, `.studio`, `.app`, `.dev`, `.software` extensions | `vybe.live` or `vybe.app` ✅ Recommended |
+| **Namecheap** | Free `.me` domain for 1 year | `vybe.me` |
+
+> **Recommendation:** Go with **Name.com** and register `vybe.live` or `vybe.app` — these sound premium and are perfect for a social media platform portfolio project.
+
+**How to claim:**
+1. Go to [education.github.com/pack](https://education.github.com/pack)
+2. Find **Name.com** → Click "Get access by connecting your GitHub account"
+3. Sign in with GitHub → Search for your desired domain → Register for free
+
+---
+
+### Step 2: How AWS Gives You a Public Address
+
+When you deploy on **AWS EKS** and create a Kubernetes `Service` of type `LoadBalancer` (or an `Ingress` with an ALB Ingress Controller), AWS automatically provisions an **Elastic Load Balancer (ELB)**.
+
+This ELB gives you either:
+- A **DNS hostname** (e.g., `a1b2c3d4.us-east-1.elb.amazonaws.com`) — most common
+- A **static IP address** — only if you use a Network Load Balancer (NLB)
+
+```
+Internet
+    │
+    ▼
+[ Your Domain: vybe.live ]  ← DNS record points here
+    │  (CNAME or A Record in Name.com)
+    ▼
+[ AWS Load Balancer: a1b2.elb.amazonaws.com ]
+    │
+    ▼
+[ Kubernetes Ingress Controller ]
+    │           │
+    ▼           ▼
+[ Frontend ] [ Backend ]
+  Service      Service
+```
+
+---
+
+### Step 3: Configure DNS on Name.com
+
+Once your EKS cluster is running and you have your Load Balancer address, log into **Name.com** and add these DNS records:
+
+**If AWS gives you a DNS hostname (most common — use CNAME):**
+
+| Type | Host | Value | TTL |
+|---|---|---|---|
+| `CNAME` | `@` (root) | `a1b2c3d4.us-east-1.elb.amazonaws.com` | 300 |
+| `CNAME` | `www` | `a1b2c3d4.us-east-1.elb.amazonaws.com` | 300 |
+
+**If AWS gives you a static IP (use A Record):**
+
+| Type | Host | Value | TTL |
+|---|---|---|---|
+| `A` | `@` (root) | `54.123.45.67` | 300 |
+| `A` | `www` | `54.123.45.67` | 300 |
+
+> **Note:** DNS changes can take up to **24-48 hours** to propagate globally, but usually it's just a few minutes.
+
+---
+
+### Step 4: Kubernetes Ingress for Domain Routing
+
+Instead of exposing each service directly, use a **Kubernetes Ingress** resource. It acts as a smart reverse proxy that routes traffic based on the domain name and URL path.
+
+**Install the AWS Load Balancer Controller** (handles Ingress on EKS):
+```bash
+# Add the EKS Helm chart repo
+helm repo add eks https://aws.github.io/eks-charts
+
+# Install the AWS Load Balancer Controller
+helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
+  -n kube-system \
+  --set clusterName=vybe-cluster \
+  --set serviceAccount.create=false \
+  --set serviceAccount.name=aws-load-balancer-controller
+```
+
+**Your Ingress manifest (`k8s/ingress.yaml`):**
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: vybe-ingress
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    # Redirect HTTP → HTTPS automatically
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+spec:
+  rules:
+  # Route traffic based on domain name
+  - host: vybe.live
+    http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: vybe-backend-service
+            port:
+              number: 4000
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: vybe-frontend-service
+            port:
+              number: 80
+```
+
+---
+
+### Step 5: Free SSL/HTTPS with cert-manager
+
+Never run a production app on plain HTTP. Use **cert-manager** with **Let's Encrypt** to get a free SSL certificate automatically.
+
+```bash
+# Install cert-manager on your cluster
+kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.14.0/cert-manager.yaml
+
+# Create a ClusterIssuer for Let's Encrypt
+cat <<EOF | kubectl apply -f -
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: your-email@example.com   # ← Replace with your email
+    privateKeySecretRef:
+      name: letsencrypt-prod
+    solvers:
+    - http01:
+        ingress:
+          class: alb
+EOF
+```
+
+Once set up, your Vybe app will be live at `https://vybe.live` with a valid SSL certificate — **completely free!**
+
+---
+
+### 🗂️ Summary: Full DNS Flow for Vybe
+
+```
+User types: https://vybe.live
+         │
+         ▼
+    Name.com DNS
+    (CNAME → AWS ELB)
+         │
+         ▼
+  AWS Elastic Load Balancer
+  (provisioned by EKS Ingress)
+         │
+         ▼
+  Kubernetes Ingress Controller
+         │
+    ┌────┴────┐
+    ▼         ▼
+  /api/*    /  (everything else)
+  Backend   Frontend
+  Service   Service (Nginx)
+```
+
+> **Key Takeaway:** The domain is just a human-readable pointer. The real traffic flow is: `DNS → AWS ELB → K8s Ingress → Services → Pods`. Your Kubernetes cluster is the final destination!
+
+---
+
 *This guide will be updated as you progress through each phase.*
+

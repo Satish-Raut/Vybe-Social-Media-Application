@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: vybe-backend-service
+spec:
+  type: ClusterIP # Internal networking only
+  selector:
+    app: vybe-backend
+  ports:
+  - port: 4000
+    targetPort: 4000

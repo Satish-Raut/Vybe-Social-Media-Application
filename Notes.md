@@ -254,3 +254,47 @@ POST "/api/message/send"  ──────────────────
 | `Client/src/Components/Notification.jsx` | Custom toast popup for background notifications |
 | `Client/src/Components/RecentMessages.jsx` | Sidebar widget, polls `/api/user/recent-messages` every 30s |
 | `Client/src/features/Messages/messageSlice.jsx` | Redux slice managing the active chat's message array |
+
+---
+
+## ❓ DevOps Doubts & Clarifications
+
+### Q: Why isn't MongoDB containerized in our Docker Compose setup?
+**A:** Because the project uses **MongoDB Atlas** (a managed cloud database), there is no need to run a local MongoDB database inside a Docker container. 
+The Dockerized Node.js backend is "stateless." It connects to the cloud database securely over the internet by reading the `MONGO_URI` from the `.env` file, which is injected into the backend container via the `env_file` directive in `docker-compose.yml`. Keeping the database outside of your app containers is a major DevOps best practice!
+
+### Q: What do the different Kubernetes (K8s) YAML files actually do?
+**A:** We created 6 K8s manifest files in the `k8s/` directory. Here is what each one is responsible for:
+1. **`secret.yaml`**: Securely holds our environment variables (like `MONGO_URI` and `CLERK_SECRET_KEY`) instead of keeping them in `.env` files on the cloud. K8s will automatically protect them and inject them into our containers.
+2. **`backend-deployment.yaml` & `frontend-deployment.yaml`**: These act as the "managers." They tell Kubernetes to run exactly 2 copies (replicas) of your Docker containers. If a container crashes, the Deployment instantly spins up a new one (Self-Healing).
+3. **`backend-service.yaml` & `frontend-service.yaml`**: Because Pod IPs change every time they restart, Services provide a *permanent, stable internal IP address* so the frontend can always reliably communicate with the backend.
+4. **`ingress.yaml`**: The "Traffic Cop" or Reverse Proxy. It sits at the edge of the cluster and routes external internet traffic based on the URL (e.g., routing traffic starting with `/api` to the backend service, and all other traffic to the frontend service).
+
+### Q: What is Terraform and how does it work compared to the AWS Console?
+**A:** Terraform is an "Infrastructure as Code" (IaC) tool. 
+* **The Old Way (AWS Console):** You log into the AWS website and click dozens of buttons to manually create networks, servers, and security groups. It's slow and prone to human error.
+* **The Terraform Way:** You write a blueprint (the `.tf` files). Terraform reads the blueprint and automatically connects to AWS to build it exactly as written.
+
+### Q: What do the different parts of our Terraform code do?
+**A:** Our files are built on three main concepts:
+1. **Providers (`provider.tf`)**: Tells Terraform *who* to talk to (e.g., AWS, Google Cloud).
+2. **Resources (`vpc.tf`, `ecr.tf`, `jenkins.tf`)**: A specific, single item you want to build, like an `aws_instance` (EC2 server) or `aws_vpc` (network).
+3. **Modules (`eks.tf`)**: A pre-packaged bundle of resources. Instead of manually writing 30+ IAM roles for an EKS cluster, we use the official AWS module which handles it for us safely in a few lines of code.
+
+### Q: What is the standard Terraform workflow?
+**A:** Terraform operates safely using 4 main commands:
+1. **`terraform init`**: Downloads the necessary plugins (like the AWS provider) to your computer.
+2. **`terraform plan`**: A dry-run. Terraform calculates exactly what it will create or delete *before* touching your AWS account.
+3. **`terraform apply`**: Executes the plan and actually builds the resources on AWS.
+4. **`terraform destroy`**: Safely deletes all the resources created by your code so you don't get charged money after your project is done.
+
+### Q: What are the main AWS Services we built with Terraform?
+**A:** We provisioned three major AWS components to host our application:
+1. **VPC (Virtual Private Cloud)**: This is your private, isolated network inside AWS. Think of it as the secure building where all your servers live.
+2. **EKS (Elastic Kubernetes Service)**: This is AWS's managed Kubernetes service. It consists of a "Control Plane" (master servers that AWS manages) and a "Node Group" (the actual EC2 worker servers where our Vybe app containers run).
+3. **ECR (Elastic Container Registry)**: This is your private version of DockerHub hosted on AWS. It is where we upload and securely store the `vybe-frontend` and `vybe-backend` Docker images so EKS can pull them.
+
+### Q: Why do I see a "Default" VPC and a Custom VPC in my AWS account?
+**A:** 
+* **The Default VPC:** Every AWS account automatically comes with one Default VPC pre-built in every region (e.g., `172.31.0.0/16`). AWS does this so beginners can click "Launch EC2" and have it work immediately without knowing networking.
+* **Our Custom VPC:** In professional DevOps environments, you **never** use the Default VPC. It is bad practice because it isn't customized for specific security needs. We used `vpc.tf` to build our own highly secure, custom network (`10.0.0.0/16`) specifically designed for our EKS cluster.
