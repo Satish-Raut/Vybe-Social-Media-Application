@@ -1,32 +1,26 @@
 version: '3.8'
 
-# This compose file is designed to spin up your fully containerized production-like environment locally.
-# It uses the Dockerfiles we just created to build the images.
-
 services:
   backend:
-    # Build from the Server directory using its Dockerfile
     build:
       context: ./Server
       dockerfile: Dockerfile
     container_name: vybe-backend
     ports:
       - "4000:4000"
-    # Load environment variables from the backend's .env file
     env_file:
       - ./Server/.env
     # Restart automatically if it crashes
     restart: always
 
   frontend:
-    # Build from the Client directory using its Dockerfile
     build:
       context: ./Client
       dockerfile: Dockerfile
     container_name: vybe-frontend
     ports:
       # Map host port 3000 to container port 80 (Nginx)
-      # You will access the app at http://localhost:3000
+      # i can will access the app at http://localhost:3000
       - "3000:80"
     # The frontend shouldn't start until the backend is up
     depends_on:

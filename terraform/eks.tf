@@ -1,5 +1,5 @@
 # This file creates our Kubernetes Cluster (EKS) on AWS.
-# We are using the official AWS EKS module because it automatically handles all the complex IAM permissions for us!
+# We are using the official AWS EKS module because it automatically handles all the complex IAM permissions for me!
 
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"

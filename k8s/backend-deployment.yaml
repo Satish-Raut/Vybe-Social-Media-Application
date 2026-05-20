@@ -14,8 +14,6 @@ spec:
     spec:
       containers:
       - name: backend
-        # Note: In production, this will be your AWS ECR image URI.
-        # For now, we use the local image we just built.
         image: socialmediaplatformvybe-backend:latest
         imagePullPolicy: Always
         ports:

@@ -7,7 +7,7 @@ echo "Starting Installation..."
 # 1. Update system
 sudo dnf update -y
 
-# 2. Install Java 17 (Required for Jenkins)
+# 2. Install Java 21 (Required for Jenkins)
 sudo dnf install java-21-amazon-corretto -y
 
 # 3. Add Jenkins Repository and Key
