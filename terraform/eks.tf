@@ -31,6 +31,18 @@ module "eks" {
     }
   }
 
+  # Allow all node-to-node traffic so pods can communicate across nodes on low ports (like Nginx on Port 80)
+  node_security_group_additional_rules = {
+    ingress_self_all = {
+      description = "Node to node all traffic"
+      protocol    = "-1"
+      from_port   = 0
+      to_port     = 0
+      type        = "ingress"
+      self        = true
+    }
+  }
+
 
   # This creates the actual EC2 servers (Worker Nodes) where your pods will run
   eks_managed_node_groups = {
