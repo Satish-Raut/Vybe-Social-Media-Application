@@ -1,12 +1,12 @@
 # This file creates our Kubernetes Cluster (EKS) on AWS.
-# We are using the official AWS EKS module because it automatically handles all the complex IAM permissions for me!
+# I am using the official AWS EKS module because it automatically handles all the complex IAM permissions for me!
 
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
   version = "~> 20.0"
 
   cluster_name    = "vybe-cluster"
-  cluster_version = "1.30" # The version of Kubernetes we want to use
+  cluster_version = "1.30" 
 
   # This allows us to connect to the cluster from our local computer
   cluster_endpoint_public_access = true
@@ -49,9 +49,9 @@ module "eks" {
     vybe_nodes = {
       min_size     = 1
       max_size     = 3
-      desired_size = 2 # We need 2 nodes because t2.micro is very small
+      desired_size = 2 
 
-      instance_types = ["t3.small"] # Changed to comply with AWS Student Free Tier
+      instance_types = ["t3.small"] 
       capacity_type  = "ON_DEMAND"
     }
   }

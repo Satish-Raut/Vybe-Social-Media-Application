@@ -54,7 +54,7 @@ pipeline {
                     sh "aws eks update-kubeconfig --region ${AWS_REGION} --name ${EKS_CLUSTER_NAME}"
                     
                     echo "4b. Injecting ECR Image URLs into K8s Manifests..."
-                    // This dynamically replaces your local image names with the AWS Cloud image URLs
+                    // This dynamically replaces my local image names with the AWS Cloud image URLs
                     sh "sed -i 's|socialmediaplatformvybe-frontend:latest|${ECR_FRONTEND}:latest|g' ./k8s/frontend-deployment.yaml"
                     sh "sed -i 's|socialmediaplatformvybe-backend:latest|${ECR_BACKEND}:latest|g' ./k8s/backend-deployment.yaml"
 

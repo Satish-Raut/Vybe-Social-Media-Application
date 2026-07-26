@@ -1,6 +1,5 @@
 # This file creates the EC2 Virtual Machine that will run Jenkins for our CI/CD pipeline.
 
-# 1. Find the latest Amazon Linux operating system image
 data "aws_ami" "amazon_linux" {
   most_recent = true
   owners      = ["amazon"]
@@ -11,7 +10,7 @@ data "aws_ami" "amazon_linux" {
   }
 }
 
-# 2. Create a Security Group (Firewall) for Jenkins
+# Create a Security Group (Firewall) for Jenkins
 resource "aws_security_group" "jenkins_sg" {
   name        = "jenkins-sg"
   description = "Allow SSH and Jenkins traffic"
@@ -46,7 +45,7 @@ resource "aws_security_group" "jenkins_sg" {
   }
 }
 
-# 3. Create an SSH Key Pair so you can log into the server securely
+
 resource "tls_private_key" "jenkins_key" {
   algorithm = "RSA"
   rsa_bits  = 4096
@@ -67,7 +66,7 @@ resource "local_file" "jenkins_private_key" {
 # 4. Create the actual EC2 Instance
 resource "aws_instance" "jenkins_server" {
   ami           = data.aws_ami.amazon_linux.id
-  instance_type = "t3.small" # Downgraded to comply with AWS Student Free Tier restrictions
+  instance_type = "t3.small" 
   
   # Put it in our public subnet so it gets an internet connection
   subnet_id                   = aws_subnet.public_subnet_1.id
@@ -81,7 +80,7 @@ resource "aws_instance" "jenkins_server" {
   }
 }
 
-# 5. Output the public IP address so we know exactly where to connect
+#  Output the public IP address so we know exactly where to connect
 output "jenkins_public_ip" {
   value       = aws_instance.jenkins_server.public_ip
   description = "The public IP of our Jenkins Server"

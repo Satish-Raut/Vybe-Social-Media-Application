@@ -19,8 +19,6 @@ services:
       dockerfile: Dockerfile
     container_name: vybe-frontend
     ports:
-      # Map host port 3000 to container port 80 (Nginx)
-      # i can will access the app at http://localhost:3000
       - "3000:80"
     # The frontend shouldn't start until the backend is up
     depends_on:
