@@ -19,7 +19,12 @@ await connectDB();
 
 // {Step-2: Define Middlewares}
 app.use(express.json());
-app.use(cors());
+// app.use(cors());
+app.use(cors({
+  origin: process.env.CLIENT_URL || "http://localhost:5173",
+  credentials: true,
+}));
+
 app.use(clerkMiddleware());
 
 // {Step-3: Define API Methods}
